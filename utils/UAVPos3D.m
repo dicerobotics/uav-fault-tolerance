@@ -18,10 +18,10 @@ classdef UAVPos3D < handle
     end
 
     methods
-        function displayObj = UAVPos3D(droneObj, h_3d, drone_marker_body)
+        function displayObj = UAVPos3D(uavObj, h_3d, drone_marker_body)
         % Constructor
-            displayObj.state = droneObj.GetState();
-            displayObj.wingspan = droneObj.l;
+            displayObj.state = uavObj.GetState();
+            displayObj.wingspan = uavObj.l;
             displayObj.rot = Quat2RM(displayObj.state(7:10));
 
             
@@ -65,8 +65,8 @@ classdef UAVPos3D < handle
         end
 
         % Update quad plot
-        function UpdateUAVPlot(displayObj, droneObj, drone_marker_body)
-            drone_state = droneObj.GetState();
+        function UpdateUAVPosPlot(displayObj, uavObj, drone_marker_body)
+            drone_state = uavObj.GetState();
 
             %wHb is homogenous transformation matrix from body to world
             wHb = [RPY2Rot(displayObj.state(7:9))' displayObj.state(1:3); 0 0 0 1];

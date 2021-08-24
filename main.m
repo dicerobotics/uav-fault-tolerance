@@ -3,8 +3,12 @@ clc; clear;
 
 addpath('./utils');
 %% DEFINE
+global R2D D2R
 R2D = 180/pi;
 D2R = pi/180;
+
+total_simulation_time = 2;          % [sec]
+sim_time_step = 0.01;               % [sec]
 
 %% INIT. PARAMS.
 drone1_params = System_Params_General();
@@ -12,8 +16,8 @@ drone2_params = System_Params_General();
 drone3_params = System_Params_General();
 
 drone1_initStates = [0, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0]'; %UAV_Init_States_General();
-drone2_initStates = [4, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0]';
-drone3_initStates = [0, 4, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0]';
+drone2_initStates = [0, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0]';
+drone3_initStates = [0, 0, -4, 0, 0, 0, 0, 0, 0, 0, 0, 0]';
 
 drone1_initInputs = UAV_Init_Inputs();
 drone2_initInputs = UAV_Init_Inputs();
@@ -28,43 +32,29 @@ drone1_gains = UAV_Controller_Gains_General();
 drone2_gains = UAV_Controller_Gains_General();
 drone3_gains = UAV_Controller_Gains_General();
 
-simulationTime = 2;         % [sec]
+
 
 %% BIRTH OF A DRONE
-drone1 = Drone(drone1_params, drone1_initStates, drone1_initInputs, drone1_gains, simulationTime);
-drone2 = Drone(drone2_params, drone2_initStates, drone2_initInputs, drone2_gains, simulationTime);
-drone3 = Drone(drone3_params, drone3_initStates, drone3_initInputs, drone3_gains, simulationTime);
+drone1 = Drone(drone1_params, drone1_initStates, drone1_initInputs, drone1_gains, total_simulation_time);
+drone2 = Drone(drone2_params, drone2_initStates, drone2_initInputs, drone2_gains, total_simulation_time);
+drone3 = Drone(drone3_params, drone3_initStates, drone3_initInputs, drone3_gains, total_simulation_time);
 
-%% Init. 3D Fig.
-h_3d = figure('pos',[0 200 800 800]);
+%% Initialize display for 3D Position plot
+% figure('pos',[1300 600 500 400]); 
+figure(); h_3d = gca;
+axis equal; grid on; view(3);
+xlabel('x [m]'); ylabel('y [m]'); zlabel('z [m]');
+quadcolors = lines(1);
 
+Q1Pos3D = UAVPos3D(drone1, h_3d, drone1_body);
+Q2Pos3D = UAVPos3D(drone2, h_3d, drone2_body);
+Q3Pos3D = UAVPos3D(drone3, h_3d, drone3_body);
 
-%% Init. Data Fig.
-% fig2 = figure('pos',[800 400 800 600]);
-% subplot(2,3,1)
-% title('phi[deg]')
-% grid on;
-% hold on;
-% subplot(2,3,2)
-% title('theta[deg]')
-% grid on;
-% hold on;
-% subplot(2,3,3)
-% title('psi[deg]')
-% grid on;
-% hold on;
-% subplot(2,3,4)
-% title('X[m]')
-% grid on;
-% hold on;
-% subplot(2,3,5)
-% title('Y[m]')
-% grid on;
-% hold on;
-% subplot(2,3,6)
-% title('Zdot[m/s]')
-% grid on;
-% hold on;
+%% Initialize display for Data plots
+figure(); h_data_Q1 = gca; Q1Data = UAVData(h_data_Q1);
+figure(); h_data_Q2 = gca; Q2Data = UAVData(h_data_Q2);
+figure(); h_data_Q3 = gca; Q3Data = UAVData(h_data_Q3);
+
 
 %% Init. PWM Fig.
 % fig3 = figure();%'pos',[800 400 800 600]);
@@ -85,37 +75,31 @@ h_3d = figure('pos',[0 200 800 800]);
 % grid on;
 % hold on;
 
-
 %% Main Loop
 commandSig(1) = 0;              %x
 commandSig(2) = 0;              %y
 commandSig(3) = -5.0;           %z
 commandSig(4) = 60.0*D2R;       %psi
 
-h_3d = gca; axis equal; grid on; view(3);
-xlabel('x [m]'); ylabel('y [m]'); zlabel('z [m]')
-quadcolors = lines(1);
-
-Q1P = UAVPos3D(drone1, h_3d, drone1_body);
-Q2P = UAVPos3D(drone2, h_3d, drone2_body);
-Q3P = UAVPos3D(drone3, h_3d, drone3_body);
-
-for i = 1:simulationTime/0.01
+for i = 1:total_simulation_time/sim_time_step
     drone1.PositionCtrl(commandSig);
     drone1.AttitudeCtrl(commandSig);
     drone1.UpdateState();
-    Q1P.UpdateUAVPlot(drone1, drone1_body);
+    Q1Pos3D.UpdateUAVPosPlot(drone1, drone1_body);
+    Q1Data.UAVDataPlot(drone1, i*sim_time_step);
     
     drone2.PositionCtrl(commandSig);
     drone2.AttitudeCtrl(commandSig);
     drone2.UpdateState();
-    Q2P.UpdateUAVPlot(drone2, drone2_body);
+    Q2Pos3D.UpdateUAVPosPlot(drone2, drone2_body);
+    Q2Data.UAVDataPlot(drone2, i*sim_time_step);
     
     drone3.PositionCtrl(commandSig);
     drone3.AttitudeCtrl(commandSig);
     drone3.UpdateState();
-    Q3P.UpdateUAVPlot(drone3, drone3_body);
-
+    Q3Pos3D.UpdateUAVPosPlot(drone3, drone3_body);
+    Q3Data.UAVDataPlot(drone3, i*sim_time_step);
+    
     %% Data Plot
 %     figure(2)
 %     subplot(2,3,1)
@@ -148,12 +132,13 @@ for i = 1:simulationTime/0.01
     if(rem(i, 50)==0)
         x_tol = ones(12,1) * 0.1;
         miss_match_counter = 0;
+        miss_match_threshold = 50;
         if(abs(drone1.x - drone2.x) < x_tol)
             %refresh the data
             drone3.x = drone1.x;
         else
             miss_match_counter = miss_match_counter + 1;
-            if miss_match_counter > miss_match_threshold
+            if (miss_match_counter > miss_match_threshold)
                 disp("Modular Redundancy Failed");
             end
             d1 = sum(abs(drone3.x - drone1.x));
@@ -167,9 +152,9 @@ for i = 1:simulationTime/0.01
         end
     end
     for itr=1:10
-        UpdatePWM(drone1, itr)
-        UpdatePWM(drone2, itr)
-        UpdatePWM(drone3, itr)
+        UpdatePWM(drone1, itr);
+        UpdatePWM(drone2, itr);
+        UpdatePWM(drone3, itr);
 
         if xor(drone1.pwm(1), drone2.pwm(1))
             voterOut(1) = drone3.pwm(1);
@@ -193,15 +178,15 @@ for i = 1:simulationTime/0.01
             voterOut(4) = drone1.pwm(4);
         end
 
-        figure(3);
-        subplot(4,1,1)
-            plot((i/100)+(itr/1000),voterOut(1), '.');  hold on;
-        subplot(4,1,2)
-            plot((i/100)+(itr/1000),voterOut(2), '.');  hold on;
-        subplot(4,1,3)
-            plot((i/100)+(itr/1000),voterOut(3), '.');  hold on;
-        subplot(4,1,4)
-            plot((i/100)+(itr/1000),voterOut(4), '.');  hold on;
+%         figure(3);
+%         subplot(4,1,1)
+%             plot((i/100)+(itr/1000),voterOut(1), '.');  hold on;
+%         subplot(4,1,2)
+%             plot((i/100)+(itr/1000),voterOut(2), '.');  hold on;
+%         subplot(4,1,3)
+%             plot((i/100)+(itr/1000),voterOut(3), '.');  hold on;
+%         subplot(4,1,4)
+%             plot((i/100)+(itr/1000),voterOut(4), '.');  hold on;
 
         
 %         voterOut(1) = (drone1.pwm(1)&&drone2.pwm(1)) || ...
@@ -236,7 +221,7 @@ for i = 1:simulationTime/0.01
 %             plot((i/100)+(itr/1000),drone3.pwm(2));
 %             plot((i/100)+(itr/1000),drone3.pwm(3));
 %             plot((i/100)+(itr/1000),drone3.pwm(4));
-        drawnow;
+%         drawnow;
     end
     
     %% BREAK WHEN CRASH
