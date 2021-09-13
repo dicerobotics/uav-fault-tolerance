@@ -13,13 +13,22 @@ clc; clear all; close all;
 %   GPS: u-blox Neo-M8N GPS/GLONASS receiver; 
 %   Integrated magnetometer IST8310
 
-STM32F765 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 0.20, ...
-    'T_C', 35, 'theta_JC', 40, 'P_max', 1.5120, 'A', 9270, 'Vs', 3.6);
+%1
+STM32F765 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 3e-5*(100)^1.82, ...
+    'T_C', 35, 'theta_JC', 40, 'P_max', 3.6*0.42, 'A', 9270, 'Vs', 3.6);
 failure_rate_STM32F765 = calcFailureRate(STM32F765)
+%2
+STM32F100 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 3e-5*(100)^1.82, ...
+    'T_C', 35, 'theta_JC', 40, 'P_max', 4*0.15, 'A', 9270, 'Vs', 3.6);
+failure_rate_STM32F100 = calcFailureRate(STM32F100) %check max power distribution
+%3
+ICM_20689 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.03, 'C2', 3e-5*(24)^1.82, ...
+    'T_C', 35, 'theta_JC', 40, 'P_max', 3.45*0.003, 'A', 6373, 'Vs', 3.6);
+failure_rate_ICM_20689 = calcFailureRate(ICM_20689)
+%4
 
-device2 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 0.20, ...
-    'T_C', 35, 'theta_JC', 40, 'P_max', 1.5120, 'A', 9270, 'Vs', 3.6);
-failure_rate_device2 = calcFailureRate(device2)
+
+
 
 function lambda = calcFailureRate(device)
 %% Calculations for Failure rate for STM32F765
