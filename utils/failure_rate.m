@@ -2,62 +2,79 @@ clc; clear all; close all;
 
 %% Hardware Details
 % Main FMU Processor: STM32F765
-%   32 Bit Arm® Cortex®-M7, 216MHz, 2MB memory, 512KB RAM
+%   32 Bit Armï¿½ Cortexï¿½-M7, 216MHz, 2MB memory, 512KB RAM
 % IO Processor: STM32F100
-%   32 Bit Arm® Cortex®-M3, 24MHz, 8KB SRAM
+%   32 Bit Armï¿½ Cortexï¿½-M3, 24MHz, 8KB SRAM
 % On-board sensors:
 %   Accel/Gyro: ICM-20689
 %   Accel/Gyro: BMI055
 %   Magnetometer: IST8310
 %   Barometer: MS5611
 %   GPS: u-blox Neo-M8N GPS/GLONASS receiver; 
-%   Integrated magnetometer IST8310
 
+
+%% Failure Rates (failures per million hours for monolithic MOS and bipolar chips)
 %1 why 1-3 theta_JC=40?????
 STM32F765 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 3e-5*(100)^1.82, ...
     'T_C', 35, 'theta_JC', 40, 'P_max', 3.6*0.42, 'A', 9270, 'Vs', 3.6);
-failure_rate_STM32F765 = calcFailureRate(STM32F765)
+failure_rate_STM32F765 = calcFailureRate(STM32F765);
 %2
 STM32F100 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.12, 'C2', 3e-5*(100)^1.82, ...
     'T_C', 35, 'theta_JC', 40, 'P_max', 4*0.15, 'A', 9270, 'Vs', 3.6); % WHY supply voltage Vs < V_DD??????
-failure_rate_STM32F100 = calcFailureRate(STM32F100) %check max power distribution
+failure_rate_STM32F100 = calcFailureRate(STM32F100); %check max power distribution
 %3
 ICM_20689 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.03, 'C2', 3e-5*(24)^1.82, ...
     'T_C', 35, 'theta_JC', 40, 'P_max', 3.45*0.003, 'A', 6373, 'Vs', 3.6);
-failure_rate_ICM_20689 = calcFailureRate(ICM_20689)
+failure_rate_ICM_20689 = calcFailureRate(ICM_20689);
 
 
 %4 organic sealed, V_DD=3.6V, I=5mA, CMOS, nonhermetic DIPs with 16 pins,
 % C1 UNKNOWN!!!!!(logical); DIP??????
 BMI055 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.10, 'C2', 2e-4*(16)^1.23, ...
     'T_C', 35, 'theta_JC', 125, 'P_max', 3.6*0.005, 'A', 9270, 'Vs', 3.6);
-failure_rate_BMI055 = calcFailureRate(BMI055)
+failure_rate_BMI055 = calcFailureRate(BMI055);
 
 %5 16 pins, Flatpack, V_DD=3.6V
 % LGA (Non-hermetic??????); theta_JC UNKNOWN!!!!!!
 % 14 bit data output??????;
 IST8310 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.10, 'C2', 3e-5*(16)^1.82, ...
     'T_C', 35, 'theta_JC', 40, 'P_max', 3.6*(1200e-6), 'A', 6373, 'Vs', 3.6);
-failure_rate_IST8310 = calcFailureRate(IST8310)
+failure_rate_IST8310 = calcFailureRate(IST8310);
 
 %6 V_DD=3.6V, Vs=4V, Imax=12.5*10e-6(is it too small????), DIP # 8;
 % Hermetic DIPs with solder or weld seals (C2)?????????
 % C1 UNKNOWN (sensor)??????
 MS5611 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.10, 'C2', 2.8e-4*(8)^1.08, ...
     'T_C', 35, 'theta_JC', 30, 'P_max', 3.6*(12.5e-6), 'A', 6373, 'Vs', 4);
-failure_rate_MS5611 = calcFailureRate(MS5611)
+failure_rate_MS5611 = calcFailureRate(MS5611);
 
 %7 DIP # 24; V_DD=3.6; hermetically sealed, reeled tapes (Hermetic DIPs
 % with solder or weld seals)
 % C1 UNKNOWN!!!!!!
 Neo_M8N = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.15, 'C2', 2.8e-4*(24)^1.08, ...
     'T_C', 35, 'theta_JC', 25, 'P_max', 3.6*0.025, 'A', 6373, 'Vs', 3.6);
-failure_rate_Neo_M8N = calcFailureRate(Neo_M8N)
+failure_rate_Neo_M8N = calcFailureRate(Neo_M8N);
 
-% %8 same as No.5
-% IST8310 = struct('pi_L', 10, 'pi_Q', 20, 'pi_E', 3.0, 'C1', 0.03, 'C2', 3e-5*(24)^1.82, ...
-%     'T_C', 35, 'theta_JC', 40, 'P_max', 3.45*0.003, 'A', 6373, 'Vs', 3.6);
-% failure_rate_IST8310 = calcFailureRate(IST8310)
+
+%% Mean time to failure
+%Non-Redundant Case
+failure_rate_sum = failure_rate_STM32F765 + failure_rate_STM32F100 + failure_rate_ICM_20689 + ...
+    failure_rate_BMI055 + failure_rate_IST8310 + failure_rate_MS5611 + failure_rate_Neo_M8N;
+
+MTTF = 1000000/failure_rate_sum;
+disp("Failure Rates: ")
+disp(failure_rate_STM32F765), disp(failure_rate_STM32F100), disp( ...
+    failure_rate_ICM_20689), disp( failure_rate_BMI055), disp( ...
+    failure_rate_IST8310), disp( failure_rate_MS5611), disp( ...
+    failure_rate_Neo_M8N);
+
+disp("Mean Time to Failure: ")
+disp(MTTF);
+
+%% Reliability Function
+time = 0:0.0001:1; %Million Hours
+reliability = exp(-(failure_rate_sum).^(time));
+plot(time, reliability)
 
 
 
